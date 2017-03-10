@@ -1,0 +1,22 @@
+body {
+    margin-top: 80px;
+}
+
+.profile-frame:hover {
+    border: 2px solid #4cae4c;
+}
+
+.profile-frame {
+    border: 2px solid #ccc;
+    padding: 20px;
+}
+
+.profil-navn {
+    margin-top: 0px;
+}
+
+.profil-kontakt {
+    text-align: center;
+    margin-bottom: 0px;
+    margin-top: 25px;
+}
