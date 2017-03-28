@@ -1,8 +1,11 @@
+<?php session_start(); ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Project</title>
-    <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+    <title>Workling - Profile</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <!--<link rel="stylesheet" type="text/css" href="css/bootstrap.css">-->
+    <link rel="stylesheet" type="text/css" href="https://bootswatch.com/sandstone/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="css/mycss.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
     <script src="js/bootstrap.js"></script>
@@ -14,7 +17,7 @@ include 'navbar.php';
 include '../ressources/db/dbconfig.php';
 
 $conn = new mysqli($servername, $dbuser, $dbpass, $dbname);
-mysqli_set_charset($conn,"utf8");
+mysqli_set_charset($conn, "utf8");
 
 $username = $_SESSION['username'];
 
@@ -23,7 +26,7 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-$sql = "SELECT * FROM profiles WHERE Email='" . $username . "'";
+$sql = "SELECT * FROM profiles INNER JOIN users ON profiles.user_id = users.user_id WHERE users.Username ='" . $username . "'";
 $result = $conn->query($sql);
 
 if ($result->num_rows > 0) {
@@ -36,7 +39,9 @@ if ($result->num_rows > 0) {
         $Postnummer = $row["Postnummer"];
         $Pris = $row["Pris"];
         $Arbejdstid = $row["Arbejdstid"];
+        $Beskrivelse = $row["Beskrivelse"];
         $Billede = $row["Billede"];
+        $_SESSION['navn'] = $row['Fornavn'] . ' ' . $row['Efternavn'];
     }
 } else {
     $Fornavn = "";
@@ -47,6 +52,7 @@ if ($result->num_rows > 0) {
     $Postnummer = "";
     $Pris = "";
     $Arbejdstid = "";
+    $Beskrivelse = "";
     $Billede = "";
 }
 echo '</tbody>
@@ -57,13 +63,15 @@ $conn->close();
 ?>
 
 <div class="container">
-    <div class="row">
-        <div class="col-md-4">
-            <img id="currentPhoto" src="<?php echo $Billede; ?>" onerror="this.src='images/no-image-icon-md.png'"
-                 width="100%" height="40%">
+    <div class="row" style="margin-bottom: 20px;">
+        <div class="col-md-2">
+            <img id="currentPhoto" class="img-rounded" src="<?php echo $Billede; ?>"
+                 onerror="this.src='images/no-image-icon-md.png'"
+                 width="160px" height="160px">
         </div>
-        <div class="col-md-4">
+        <div class="col-md-10">
             <?php
+            echo '<div class="alert alert-warning" id="warningFieldsEmpty" role="alert">Din profil skal indeholde: Fornavn, Efternavn, Email, Timeløn, Postnummer og Arbejdstider for at blive vist under søgninger!</div>';
             echo '<form  id="profileForm" method="post" action="">
         <div class="form-group" enctype="multipart/form-data">
             <label for="Fornavn">Fornavn</label>
@@ -76,7 +84,12 @@ $conn->close();
         <div class="form-group">
             <label for="billedeInput">Upload dit billede her!</label>
             <input type="file" id="billedeInput">
-            <p class="help-block">Upload et billede af dig selv her.(PNG, JPG eller lignende billedfil.)</p>
+            <p class="help-block">Upload et billede af dig selv her.(PNG, JPG)</p>
+        </div>
+        <div class="form-group">
+            <label for="cvInput">Upload dit cv her!</label>
+            <input type="file" id="cvInput">
+            <p class="help-block">Upload et cv her.(PDF)</p>
         </div>
         <div class="form-group">
             <label for="Email">Email</label>
@@ -95,24 +108,27 @@ $conn->close();
             <input type="text" class="form-control" id="Postnummer" name="Postnummer" placeholder="Postnummer" value="' . htmlspecialchars($Postnummer) . '">
         </div>
         <div class="form-group">
-            <label for="Pris">Pris</label>
+            <label for="Pris">Timeløn</label>
             <input type="text" class="form-control" id="Pris" name="Pris" placeholder="Pris" value="' . htmlspecialchars($Pris) . '">
         </div>
         <div class="form-group">
             <label for="Arbejdstid">Arbejdstid</label>
             <textarea rows="4" cols="25" class="form-control" id="Arbejdstid" name="Arbejdstid">' . $GLOBALS['Arbejdstid'] . '</textarea>
         </div>
-        <input type="submit" id="gemProfil" name="gem" class="btn btn-success" value="Gem">
+        <div class="form-group">
+            <label for="Beskrivelse">Beskrivelse</label>
+            <textarea rows="4" cols="25" class="form-control" id="Beskrivelse" name="Beskrivelse">' . $GLOBALS['Beskrivelse'] . '</textarea>
+        </div>
+        <input type="submit" id="gemProfil" name="gem" class="btn btn-success" value="Gem" style="display: inline-block; width: 80px; position: absolute;">    
+        <div id="success-alert" class="alert alert-success collapse" style="margin-left: 84px; height: 46px;" role="alert">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                            aria-hidden="true">×</span></button>
+                <strong>Profil gemt, vent venligst et øjeblik imens siden genindlæser!</strong>
+        </div>
         <br><br>
         </form>';
             ?>
-            <div id="success-alert" class="alert alert-success collapse" role="alert">
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
-                            aria-hidden="true">×</span></button>
-                <strong>Profil gemt!</strong>
-            </div>
         </div>
-        <div class="col-md-4"></div>
     </div>
 </div>
 
@@ -121,6 +137,11 @@ $conn->close();
     $(document).ready(function () {
         var placeholder = 'Eksempel: \nHverdage: 16-19 \nLørdage: 08-14 \nSøndage: 11-16';
         $('#Arbejdstid').attr('placeholder', placeholder);
+
+        if ($('#Fornavn').val() != '' && $('#Efternavn').val() != '' && $('#Email').val() != '' && $('#Pris').val() != 0 && $('#Postnummer').val() != 0 && $('#Arbejdstid').val() != '') {
+            $('#warningFieldsEmpty').hide();
+        }
+
 
         $('#gemProfil').click(function (e) {
             // e.preventDefault();
@@ -141,7 +162,9 @@ $conn->close();
             var postnummer = $('#Postnummer').val();
             var pris = $('#Pris').val();
             var arbejdstid = $('#Arbejdstid').val();
+            var beskrivelse = $('#Beskrivelse').val();
             var billede = $("#billedeInput")[0];
+            var cv = $("#cvInput")[0];
 
             formData.append("fornavn", fornavn);
             formData.append("efternavn", efternavn);
@@ -151,7 +174,9 @@ $conn->close();
             formData.append("postnummer", postnummer);
             formData.append("pris", pris);
             formData.append("arbejdstid", arbejdstid);
+            formData.append("beskrivelse", beskrivelse);
             formData.append("billede", billede.files[0]);
+            formData.append("cv", cv.files[0]);
 
             $.ajax({
                 type: "POST",
@@ -168,8 +193,10 @@ $conn->close();
                     } else {
                         console.log("ticket added! Ticket number is " + data);
                     }
-                    $("#success-alert").fadeTo(2000, 500).slideUp(500, function(){
+                    $("#success-alert").offset();
+                    $("#success-alert").fadeTo(2000, 500).slideUp(500, function () {
                         $("#success-alert").slideUp(500);
+                        location.reload();
                     });
                 },
                 error: function () {

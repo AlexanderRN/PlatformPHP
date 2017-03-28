@@ -3,7 +3,8 @@ body {
 }
 
 .profile-frame:hover {
-    border: 2px solid #4cae4c;
+    border: 2px solid #81b33a;
+    <!-- #72cc72 -->
 }
 
 .profile-frame {
@@ -15,8 +16,16 @@ body {
     margin-top: 0px;
 }
 
-.profil-kontakt {
-    text-align: center;
+.profil-row-one {
     margin-bottom: 0px;
-    margin-top: 25px;
+}
+
+.artikel-frame {
+    border: 2px solid #ccc;
+    padding: 20px;
+}
+
+.artikel-frame:hover {
+    border: 2px solid #81b33a;
+<!-- #72cc72 -->
 }

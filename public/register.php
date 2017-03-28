@@ -1,5 +1,6 @@
 <?php
 session_start();
+error_reporting(0);
 include '../ressources/db/dbconfig.php';
 if (isset($_POST['newemail']) && isset($_POST['newpassword'])) {
     $conn = new mysqli($servername, $dbuser, $dbpass, $dbname);
@@ -13,12 +14,12 @@ if (isset($_POST['newemail']) && isset($_POST['newpassword'])) {
     $Pass = $_POST['newpassword'];
     $Pass = password_hash($Pass, PASSWORD_DEFAULT);
 
-    $sql = "INSERT INTO users (Email, Password)
+    $sql = "INSERT INTO users (Username, Password)
         VALUES ('$User', '$Pass')";
 
     if ($conn->query($sql) === TRUE) {
-        $_SESSION['loginError'] = "User created!";
-        header("Location: index.php"); // Redirecting To Home Page
+        $_SESSION['username'] = $User;
+        header("Location: profile.php"); // Redirecting To profile Page
     } else if ($conn->errno == 1062){
         $_SESSION['loginError'] = "Username already taken.";
         header("Location: index.php"); // Redirecting To Home Page

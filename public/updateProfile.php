@@ -5,7 +5,7 @@ include '../ressources/db/dbconfig.php';
 
 if (isset($_SERVER['REQUEST_METHOD'])) {
     $conn = new mysqli($servername, $dbuser, $dbpass, $dbname);
-    mysqli_set_charset($conn,"utf8");
+    mysqli_set_charset($conn, "utf8");
 
     // Check connection
     if ($conn->connect_error) {
@@ -14,24 +14,36 @@ if (isset($_SERVER['REQUEST_METHOD'])) {
 
     $username = $_SESSION['username'];
 
-    $stmt = $conn->prepare("SELECT user_id FROM users WHERE Email=?");
+    $stmt = $conn->prepare("SELECT user_id FROM users WHERE Username=?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $stmt->bind_result($user_id);
     $stmt->fetch();
 
-    $target_dir = "images/uploads/";
-    $target_file = $target_dir . basename($_FILES["billede"]["name"]);
-    $uploadOk = 1;
-    $imageFileType = pathinfo($target_file, PATHINFO_EXTENSION);
-    // Check if image file is a actual image or fake image
+    $target_dirBillede = "images/uploads/";
+    $target_dirCV = "images/uploads/cv/";
 
-    $check = getimagesize($_FILES["billede"]["tmp_name"]);
-    if ($check !== false) {
-        $uploadOk = 1;
-    } else {
-        $uploadOk = 0;
+    $target_fileBillede = null;
+    $target_fileCV = null;
+
+    if (isset($_FILES["billede"])) {
+        $target_fileBillede = $target_dirBillede . basename($_FILES["billede"]["name"] . $username);
     }
+    if (isset($_FILES["cv"])) {
+        $target_fileCV = $target_dirCV . basename($_FILES["cv"]["name"] . $username);
+    }
+
+    if (move_uploaded_file($_FILES['billede']['tmp_name'], $target_fileBillede)) {
+        echo "File is valid, and was successfully uploaded.\n";
+    } else {
+        echo "Upload failed";
+    }
+    if (move_uploaded_file($_FILES['cv']['tmp_name'], $target_fileCV)) {
+        echo "File is valid, and was successfully uploaded.\n";
+    } else {
+        echo "Upload failed";
+    }
+
 
     //TJEK OG FIX DETTE SÅ BILLEDE GEMMER OG SIDEN RELOADER SÅ INFORMATIONERNE ER OPDATERET
 
@@ -44,19 +56,39 @@ if (isset($_SERVER['REQUEST_METHOD'])) {
     $Postnummer = $_POST["postnummer"];
     $Pris = $_POST["pris"];
     $Arbejdstid = $_POST["arbejdstid"];
+    $Beskrivelse = $_POST["beskrivelse"];
+    $Billede = $target_fileBillede;
+    $CV = $target_fileCV;
 
     $stmt->close();
 
-    $stmt = $conn->prepare("INSERT INTO profiles (user_id, Fornavn, Efternavn, Email, Tlf, Bynavn, Postnummer, Pris, Arbejdstid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    if ($Billede == null && $CV == null) {
+        $stmt = $conn->prepare("INSERT INTO profiles (user_id, Fornavn, Efternavn, Email, Tlf, Bynavn, Postnummer, Pris, Arbejdstid, Beskrivelse) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), Fornavn = VALUES(Fornavn), Efternavn = VALUES(Efternavn),
+         Email = VALUES(Email), Tlf = VALUES(Tlf), Bynavn = VALUES(Bynavn), Postnummer = VALUES(Postnummer), Pris = VALUES(Pris), Arbejdstid = VALUES(Arbejdstid), Beskrivelse = VALUES(Beskrivelse)");
+        $stmt->bind_param("isssisiiss", $user_id, $Fornavn, $Efternavn, $Email, $Telefon, $Bynavn, $Postnummer, $Pris, $Arbejdstid, $Beskrivelse);
+    } else if ($Billede != null && $CV == null) {
+        $stmt = $conn->prepare("INSERT INTO profiles (user_id, Fornavn, Efternavn, Email, Tlf, Bynavn, Postnummer, Pris, Arbejdstid, Billede, Beskrivelse) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), Fornavn = VALUES(Fornavn), Efternavn = VALUES(Efternavn),
+         Email = VALUES(Email), Tlf = VALUES(Tlf), Bynavn = VALUES(Bynavn), Postnummer = VALUES(Postnummer), Pris = VALUES(Pris), Arbejdstid = VALUES(Arbejdstid), Billede = VALUES(Billede), Beskrivelse = VALUES(Beskrivelse)");
+        $stmt->bind_param("isssisiisss", $user_id, $Fornavn, $Efternavn, $Email, $Telefon, $Bynavn, $Postnummer, $Pris, $Arbejdstid, $Billede, $Beskrivelse);
+    } else if ($CV != null && $Billede == null) {
+        $stmt = $conn->prepare("INSERT INTO profiles (user_id, Fornavn, Efternavn, Email, Tlf, Bynavn, Postnummer, Pris, Arbejdstid, CV, Beskrivelse) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), Fornavn = VALUES(Fornavn), Efternavn = VALUES(Efternavn),
+         Email = VALUES(Email), Tlf = VALUES(Tlf), Bynavn = VALUES(Bynavn), Postnummer = VALUES(Postnummer), Pris = VALUES(Pris), Arbejdstid = VALUES(Arbejdstid), CV = VALUES(CV), Beskrivelse = VALUES(Beskrivelse)");
+        $stmt->bind_param("isssisiisss", $user_id, $Fornavn, $Efternavn, $Email, $Telefon, $Bynavn, $Postnummer, $Pris, $Arbejdstid, $CV, $Beskrivelse);
+    } else {
+        $stmt = $conn->prepare("INSERT INTO profiles (user_id, Fornavn, Efternavn, Email, Tlf, Bynavn, Postnummer, Pris, Arbejdstid, Billede, CV, Beskrivelse) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), Fornavn = VALUES(Fornavn), Efternavn = VALUES(Efternavn),
-     Email = VALUES(Email), Tlf = VALUES(Tlf), Bynavn = VALUES(Bynavn), Postnummer = VALUES(Postnummer), Pris = VALUES(Pris), Arbejdstid = VALUES(Arbejdstid)");
+     Email = VALUES(Email), Tlf = VALUES(Tlf), Bynavn = VALUES(Bynavn), Postnummer = VALUES(Postnummer), Pris = VALUES(Pris), Arbejdstid = VALUES(Arbejdstid), Billede = VALUES(Billede), CV = VALUES(CV), Beskrivelse = VALUES(Beskrivelse)");
+        $stmt->bind_param("isssisiissss", $user_id, $Fornavn, $Efternavn, $Email, $Telefon, $Bynavn, $Postnummer, $Pris, $Arbejdstid, $Billede, $CV, $Beskrivelse);
+    }
 
-    $stmt->bind_param("isssisiis", $user_id, $Fornavn, $Efternavn, $Email, $Telefon, $Bynavn, $Postnummer, $Pris, $Arbejdstid);
     $stmt->execute();
     $stmt->close();
 
     $conn->close();
 
-  //  header('Location: profile.php');
+    //  header('Location: profile.php');
 }
 
